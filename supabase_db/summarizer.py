@@ -2,38 +2,58 @@ import os
 import time
 
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
 
 load_dotenv()
-API_KEY = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=API_KEY)
 
-# use gemini modal
-model = genai.GenerativeModel("gemini-1.5-flash-latest")
+# Modele configurable via .env (par defaut : gemini-2.5-flash)
+MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+# Client cree paresseusement pour ne pas planter a l'import si la cle manque
+_client = None
+
+
+def _get_client():
+    global _client
+    if _client is None:
+        _client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    return _client
+
 
 def summarize_text(text: str, max_tokens: int = 200) -> str:
     if not text or len(text.strip()) < 30:
-        return "Insufficient text for summary."
+        return "Texte insuffisant pour un resume."
 
-    prompt = f"Please provide a concise summary in English (between 10 and 20 sentences) of the following content:\n{text}"
+    prompt = (
+        "Tu es un assistant de veille technologique. "
+        "Resume le contenu suivant en francais, de facon concise "
+        "(entre 5 et 10 phrases), en gardant les informations essentielles :\n\n"
+        f"{text}"
+    )
 
     try:
-        # Wait between requests to avoid exceeding quota
+        # Attendre entre les requetes pour ne pas depasser le quota
         time.sleep(4)
-        response = model.generate_content(prompt)
-        print(" summary:", response.text[:100], "...")
+        response = _get_client().models.generate_content(
+            model=MODEL,
+            contents=prompt,
+        )
+        print(" resume:", response.text[:100], "...")
         return response.text.strip()
     except Exception as e:
-        # Explicit handling of quota errors (429)
+        # Gestion explicite des erreurs de quota (429)
         err_text = str(e)
         if "429" in err_text:
             time.sleep(15)
             try:
-                response = model.generate_content(prompt)
-                print("Summary (2nd attempt)) :", response.text[:100], "...")
+                response = _get_client().models.generate_content(
+                    model=MODEL,
+                    contents=prompt,
+                )
+                print("Resume (2e tentative)) :", response.text[:100], "...")
                 return response.text.strip()
             except Exception as e2:
-                print("Failed again:", e2)
-                return "Summary unavailable"
-        print(" Gemini error:", e)
-        return "Summary unavailable"
+                print("Echec de nouveau :", e2)
+                return "Resume indisponible"
+        print(" Erreur Gemini :", e)
+        return "Resume indisponible"
