@@ -37,15 +37,25 @@ source .venv/bin/activate        # Linux/macOS
 
 -pip install -r requirements.txt
 
-### 4. Configure the environment
+### 4. Configure Supabase (premiere fois)
 
--Crée un fichier .env et ajoute tes clés Supabase + Gemini :
+- Cree un projet sur [supabase.com](https://supabase.com) (gratuit)
+- Dans **SQL Editor**, colle le contenu de `supabase_setup.sql` et execute-le :
+  ca cree les tables `sources` et `articles` + 3 sources de depart
 
--SUPABASE_URL=...
+### 5. Configure the environment
+
+Copie `.env.example` en `.env` puis remplis tes cles :
+
+-SUPABASE_URL=...   (Dashboard > Project Settings > API)
 -SUPABASE_KEY=...
--GEMINI_API_KEY=...
+-GEMINI_API_KEY=... (https://aistudio.google.com/apikey)
 
-### 5. Run the scraper
+### 6. Run the scraper
+
 python main.py
+
+# Ou en automatique, toutes les 2 heures :
+python auto_runner.py
 
 
