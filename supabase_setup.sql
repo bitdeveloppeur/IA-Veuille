@@ -19,6 +19,9 @@ create table if not exists public.sources (
     created_at         timestamptz not null default now()
 );
 
+-- Pour les bases creees avec une ancienne version du script
+alter table public.sources add column if not exists use_playwright boolean not null default true;
+
 -- Table des articles scrapes
 create table if not exists public.articles (
     id           uuid primary key default gen_random_uuid(),
