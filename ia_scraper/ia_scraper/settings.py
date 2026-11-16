@@ -15,8 +15,8 @@
 
 BOT_NAME = "ia_scraper"
 
-SPIDER_MODULES = ["ia_scraper.spiders"]
-NEWSPIDER_MODULE = "ia_scraper.spiders"
+SPIDER_MODULES = ["ia_scraper.ia_scraper.spiders"]
+NEWSPIDER_MODULE = "ia_scraper.ia_scraper.spiders"
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
@@ -118,7 +118,6 @@ PLAYWRIGHT_LAUNCH_OPTIONS = {"headless": True}
 DEFAULT_REQUEST_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en",
-    " USER_AGENT" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36"
 }
 
 
