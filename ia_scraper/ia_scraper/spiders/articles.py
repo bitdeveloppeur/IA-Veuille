@@ -1,5 +1,6 @@
 import scrapy
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
 
 from ia_scraper.ia_scraper.items import IaScraperItem
 from supabase_db.db_services import get_active_sources, article_exists, save_article
@@ -31,20 +32,27 @@ class SmartAISpider(scrapy.Spider):
                     "domain": source.get("domain", "undefined"),
                     "article_link_xpath": source.get("article_link_xpath", ""),
                     "content_xpath": source.get("content_xpath", ""),
-                    "playwright": True
+                    # Playwright seulement pour les sites rendus en JavaScript
+                    "playwright": bool(source.get("use_playwright", True))
                 }
             )
 
     def guess_article_links(self, response):
         self.logger.info("fallback mode: heuristic search for article links.")
         candidates = response.xpath("//a[not(contains(@href, '#')) and contains(@href, '/')]/@href").getall()
-        full_links = [response.urljoin(link) for link in candidates if link.startswith("/")]
+        host = urlparse(response.url).netloc
+        # Garder uniquement les liens du meme domaine (relatifs ou absolus)
+        full_links = [
+            response.urljoin(link)
+            for link in candidates
+            if urlparse(response.urljoin(link)).netloc == host
+        ]
         return list(set(full_links))[:10]
 
     def parse_article_list(self, response):
         self.logger.info(f" Reading articles on : {response.url}")
         xpath = response.meta["article_link_xpath"]
-        links = response.xpath(xpath).getall()[:5] if xpath else []
+        links = response.xpath(xpath).getall()[:10] if xpath else []
 
         if not links:
             self.logger.warning(f"No link found with XPath: {xpath} sur {response.url}")
@@ -61,7 +69,7 @@ class SmartAISpider(scrapy.Spider):
                     "source_name": response.meta["source_name"],
                     "domain": response.meta["domain"],
                     "content_xpath": response.meta["content_xpath"],
-                    "playwright": True
+                    "playwright": response.meta.get("playwright", False)
                 }
             )
 
@@ -92,7 +100,10 @@ class SmartAISpider(scrapy.Spider):
                 # Rendre la date "aware" si elle est naive, sinon la comparaison echoue
                 if published_at.tzinfo is None:
                     published_at = published_at.replace(tzinfo=timezone.utc)
-                if published_at < datetime.now(timezone.utc) - timedelta(hours=1):
+                # Fenetre de fraicheur 48h : assez large pour les medias qui
+                # ne publient pas toutes les heures, le dedoublonnage par URL
+                # evite les doublons entre les runs
+                if published_at < datetime.now(timezone.utc) - timedelta(hours=48):
                     self.logger.info(f" Article too old (>{published_at}), ignored : {url}")
                     return
             except Exception:

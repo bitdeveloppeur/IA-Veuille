@@ -110,6 +110,8 @@ DOWNLOAD_HANDLERS = {
    # Pour ne pas charger les images inutilement
 PLAYWRIGHT_BROWSER_TYPE = "chromium"
 PLAYWRIGHT_LAUNCH_OPTIONS = {"headless": True}
+# Accelerer le rendu : ignorer images, videos et polices
+PLAYWRIGHT_ABORT_REQUEST = {"resource_types": ["image", "media", "font"]}
 #
 # ITEM_PIPELINES = {
 #    "ia_scraper.pipelines.SaveToSupabasePipeline": 300,
