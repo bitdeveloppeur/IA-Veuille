@@ -1,6 +1,7 @@
-google-generativeai==0.8.4
-playwright==1.51.0
-Scrapy==2.12.0
+google-genai
+playwright
+Scrapy>=2.13
+scrapy-playwright
 python-dotenv
 supabase
 schedule
