@@ -1,5 +1,5 @@
 import scrapy
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from ia_scraper.ia_scraper.items import IaScraperItem
 from supabase_db.db_services import get_active_sources, article_exists, save_article
@@ -13,22 +13,27 @@ def safe_iso(dt):
 class SmartAISpider(scrapy.Spider):
     name = "smart_ai"
 
-    # def start_requests(self):
-    #     sources = get_active_sources()
-    #     for source in sources:
-    #         if not source["active"]:
-    #             continue
-    #         yield scrapy.Request(
-    #             url=source["url"],
-    #             callback=self.parse_article_list,
-    #             meta={
-    #                 "source_name": source["name"],
-    #                 "domain": source.get("domain", "undefined"),
-    #                 "article_link_xpath": source.get("article_link_xpath", ""),
-    #                 "content_xpath": source.get("content_xpath", ""),
-    #                 "playwright": True
-    #             }
-    #         )
+    def start_requests(self):
+        sources = get_active_sources()
+        if not sources:
+            self.logger.error(
+                "Aucune source active trouvee dans Supabase "
+                "(table 'sources') — verifie la connexion ou le SQL d'initialisation."
+            )
+        for source in sources:
+            if not source["active"]:
+                continue
+            yield scrapy.Request(
+                url=source["url"],
+                callback=self.parse_article_list,
+                meta={
+                    "source_name": source["name"],
+                    "domain": source.get("domain", "undefined"),
+                    "article_link_xpath": source.get("article_link_xpath", ""),
+                    "content_xpath": source.get("content_xpath", ""),
+                    "playwright": True
+                }
+            )
 
     def guess_article_links(self, response):
         self.logger.info("fallback mode: heuristic search for article links.")
@@ -84,7 +89,10 @@ class SmartAISpider(scrapy.Spider):
         if date_str:
             try:
                 published_at = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-                if published_at < datetime.utcnow() - timedelta(hours=1):
+                # Rendre la date "aware" si elle est naive, sinon la comparaison echoue
+                if published_at.tzinfo is None:
+                    published_at = published_at.replace(tzinfo=timezone.utc)
+                if published_at < datetime.now(timezone.utc) - timedelta(hours=1):
                     self.logger.info(f" Article too old (>{published_at}), ignored : {url}")
                     return
             except Exception:
