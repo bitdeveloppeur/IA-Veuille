@@ -41,7 +41,8 @@ source .venv/bin/activate        # Linux/macOS
 
 - Cree un projet sur [supabase.com](https://supabase.com) (gratuit)
 - Dans **SQL Editor**, colle le contenu de `supabase_setup.sql` et execute-le :
-  ca cree les tables `sources` et `articles` + 3 sources de depart
+  ca cree les tables `sources` et `articles` + 4 sources d'actualites du Burkina Faso
+  (Burkina24, AIB, RTB, BF1)
 
 ### 5. Configure the environment
 
